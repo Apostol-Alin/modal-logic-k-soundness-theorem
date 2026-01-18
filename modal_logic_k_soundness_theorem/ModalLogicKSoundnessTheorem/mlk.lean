@@ -299,14 +299,41 @@ def IsValidInAClassOfFrames (φ : Formula) (𝔽 : Set (Frame)): Prop :=
 def IsValid (φ : Formula) : Prop :=
   ∀ (ℱ : Frame), IsValidInAFrame φ ℱ
 
-theorem example_2_19 : IsValid (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
-  unfold IsValid
-  intros ℱ
-  unfold IsValidInAFrame
-  intros w
-  unfold IsValidInAState
-  intros ℳ h
-  exact satisfies ℳ w
+-- this is immediate from the definition; the other have to be proven by unfolding the definitions of the derived connectors
+theorem satisfies_imp {ℳ : Model} (w : ℳ.ℱ.W) (φ ψ : Formula) :
+  satisfies ℳ w (φ ⇒ ψ) ↔ (satisfies ℳ w φ → satisfies ℳ w ψ) := by
+  rfl
+
+theorem satisfies_or {ℳ : Model} (w : ℳ.ℱ.W) (φ ψ : Formula) :
+  satisfies ℳ w (φ ⋁ ψ) ↔ satisfies ℳ w φ ∨ satisfies ℳ w ψ := by
+  apply Iff.intro
+  . intros h
+    unfold disj at h
+    rw [ satisfies_imp ] at h
+    by_cases ip : (satisfies ℳ w (φ))
+    . exact Or.inl ip
+    . right
+      exact h ip
+  . intros h
+    unfold disj
+    unfold satisfies
+    cases h
+    · intros hnp
+      contradiction
+    · intros _
+      assumption
+
+theorem satisfies_diamond {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
+  satisfies ℳ w (⋄φ) ↔ ∃ v : ℳ.ℱ.W, ℳ.ℱ.R w v ∧ satisfies ℳ w φ := sorry
+
+-- theorem example_2_19 : IsValid (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
+--   unfold IsValid
+--   intros ℱ
+--   unfold IsValidInAFrame
+--   intros w
+--   unfold IsValidInAState
+--   intros ℳ h
+--   exact satisfies ℳ w
 
 
 end Formula
