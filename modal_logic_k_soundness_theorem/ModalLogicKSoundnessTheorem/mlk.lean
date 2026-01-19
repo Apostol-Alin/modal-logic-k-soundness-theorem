@@ -281,6 +281,8 @@ structure Model where
 /- Let's see what it means for a fomula φ to be true in a model ℳ at a state w -/
 /- A formula is true (or is satisfied) in ℳ at state w, notation ℳ, w ⊩ φ  -/
 
+variable {φ ψ : Formula}
+
 def satisfies (ℳ : Model) (w : ℳ.ℱ.W) : Formula → Prop
   | var p   => ℳ.V p w
   | neg φ   => ¬(satisfies ℳ w φ)
@@ -299,7 +301,17 @@ def IsValidInAClassOfFrames (φ : Formula) (𝔽 : Set (Frame)): Prop :=
 def IsValid (φ : Formula) : Prop :=
   ∀ (ℱ : Frame), IsValidInAFrame φ ℱ
 
--- this is immediate from the definition; the other have to be proven by unfolding the definitions of the derived connectors
+set_option hygiene false in prefix:100 "⊩" => IsValid
+
+-- this is immediate from the definition;
+
+theorem satisfies_neg {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
+  satisfies ℳ w (∼ φ) ↔ (¬satisfies ℳ w φ) := by rfl
+
+theorem satisfies_box {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
+  satisfies ℳ w (□ φ) ↔ (∀ v, ℳ.ℱ.R w v → satisfies ℳ v φ) := by
+  rfl
+
 theorem satisfies_imp {ℳ : Model} (w : ℳ.ℱ.W) (φ ψ : Formula) :
   satisfies ℳ w (φ ⇒ ψ) ↔ (satisfies ℳ w φ → satisfies ℳ w ψ) := by
   rfl
@@ -323,17 +335,105 @@ theorem satisfies_or {ℳ : Model} (w : ℳ.ℱ.W) (φ ψ : Formula) :
     · intros _
       assumption
 
-theorem satisfies_diamond {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
-  satisfies ℳ w (⋄φ) ↔ ∃ v : ℳ.ℱ.W, ℳ.ℱ.R w v ∧ satisfies ℳ w φ := sorry
+theorem satisifies_and {ℳ : Model} (w : ℳ.ℱ.W) (φ ψ : Formula) :
+  satisfies ℳ w (φ ⋀ ψ) ↔ satisfies ℳ w φ ∧ satisfies ℳ w ψ := by
+  apply Iff.intro
+  . unfold conj
+    intros h
+    rw [ satisfies_neg ] at h
+    rw [ satisfies_imp ] at h
+    rw [ Classical.not_imp ] at h
+    rw [ satisfies_neg ] at h
+    rw [ Classical.not_not ] at h
+    assumption
+  . intros _
+    unfold conj
+    rw [ satisfies_neg ]
+    rw [ satisfies_imp ]
+    rw [ Classical.not_imp ]
+    rw [ satisfies_neg ]
+    rw [ Classical.not_not ]
+    assumption
 
--- theorem example_2_19 : IsValid (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
---   unfold IsValid
---   intros ℱ
---   unfold IsValidInAFrame
---   intros w
---   unfold IsValidInAState
---   intros ℳ h
---   exact satisfies ℳ w
+theorem satisfies_diamond {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
+  satisfies ℳ w (⋄φ) ↔ ∃ v : ℳ.ℱ.W, ℳ.ℱ.R w v ∧ satisfies ℳ v φ := by
+    apply Iff.intro
+    . intros h
+      unfold diamond at h
+      rw [ satisfies_neg ] at h
+      rw [ satisfies_box ] at h
+      rw [ Classical.not_forall ] at h
+      obtain ⟨v, hv⟩ := h
+      use v
+      rw [ satisfies_neg ] at hv
+      rw [ Classical.not_imp ] at hv
+      rw [ Classical.not_not ] at hv
+      assumption
+    . intros h
+      obtain ⟨v, hv⟩ := h
+      unfold diamond
+      rw [ satisfies_neg ]
+      rw [ satisfies_box ]
+      intros ip
+      specialize ip v
+      have ip₁ := ip hv.left
+      have ip₂ := hv.right
+      contradiction
+
+theorem example_2_19 : IsValid (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
+  unfold IsValid
+  intros ℱ
+  unfold IsValidInAFrame
+  intros w
+  unfold IsValidInAState
+  intros ℳ h
+  rw [satisfies_imp]
+  rw [satisfies_or]
+  rw [satisfies_diamond]
+  intros h
+  rcases h with ⟨v, ⟨h_acc, h⟩⟩
+  rw [satisfies_or] at h
+  rw [satisfies_diamond]
+  rw [satisfies_diamond]
+  cases h
+  case inl h =>
+    apply Or.inl
+    use v -- this manages to fill the proof automatically, below is what happens manually
+    -- exact Exists.intro v (And.intro h_acc h)
+  case inr h =>
+    apply Or.inr
+    use v
+
+/- Soundness theorem -/
+
+theorem satisfiesIsMorphism (ℳ : Model) (w : ℳ.ℱ.W) :
+  Morphism (satisfies ℳ w) := {
+  respects_implication := fun φ ψ => satisfies_imp w φ ψ
+  respects_neg := fun φ => satisfies_neg w φ
+}
+
+theorem soundness_theorem : ∀ {p : Formula}, ⊢K p → ⊩ p := by
+  intros p
+  intros ip
+  induction ip with
+  | @tautology φ h =>
+    unfold IsValid IsValidInAFrame IsValidInAState
+    intros ℱ w ℳ eq
+    unfold IsTautology at h
+    specialize h (satisfies ℳ (eq ▸ w)) (satisfiesIsMorphism ℳ (eq ▸ w))
+    assumption
+  | @modusPonens φ ψ k_φ k_imp v_φ v_imp =>
+    unfold IsValid IsValidInAFrame IsValidInAState
+    intros ℱ w ℳ eq
+    unfold IsValid IsValidInAFrame IsValidInAState at v_φ
+    specialize v_φ ℱ w ℳ eq
+    unfold IsValid IsValidInAFrame IsValidInAState at v_imp
+    specialize v_imp ℱ w ℳ eq
+    rw [ satisfies_imp ] at v_imp
+    exact v_imp v_φ
+  | @generalization φ k_φ v_φ =>
+    unfold IsValid IsValidInAFrame IsValidInAState at v_φ
+
 
 
 end Formula
