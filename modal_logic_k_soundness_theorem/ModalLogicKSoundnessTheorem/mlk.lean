@@ -380,7 +380,7 @@ theorem satisfies_diamond {ℳ : Model} (w : ℳ.ℱ.W) (φ : Formula) :
       have ip₂ := hv.right
       contradiction
 
-theorem example_2_19 : IsValid (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
+theorem example_2_19 : ⊩ (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q)) := by
   unfold IsValid
   intros ℱ
   unfold IsValidInAFrame
