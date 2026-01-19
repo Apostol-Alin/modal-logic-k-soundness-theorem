@@ -136,7 +136,7 @@ inductive KProovable : Formula → Prop where
 /- The rules of proof of K -/
 | modusPonens {φ ψ : Formula} : ⊢K φ → ⊢K (φ ⇒ ψ) → ⊢K ψ
 | generalization {φ : Formula} : ⊢K φ → ⊢K (□φ)
-| K {φ ψ : Formula} : ⊢K ((φ ⇒ ψ) ⇒ (□φ ⇒ □ψ))
+| K {φ ψ : Formula} : ⊢K (□(φ ⇒ ψ) ⇒ (□φ ⇒ □ψ))
 
 /- Let's define some propositions for the course and proove that they are KProovable -/
 
@@ -432,8 +432,27 @@ theorem soundness_theorem : ∀ {p : Formula}, ⊢K p → ⊩ p := by
     rw [ satisfies_imp ] at v_imp
     exact v_imp v_φ
   | @generalization φ k_φ v_φ =>
-    unfold IsValid IsValidInAFrame IsValidInAState at v_φ
-
-
+      unfold IsValid IsValidInAFrame IsValidInAState
+      intros ℱ w ℳ eq
+      cases eq
+      unfold IsValid IsValidInAFrame IsValidInAState at v_φ
+      rw [satisfies_box]
+      intros v hv
+      exact v_φ ℳ.ℱ v ℳ rfl
+  | @K φ ψ =>
+      unfold IsValid IsValidInAFrame IsValidInAState
+      intros ℱ w ℳ eq
+      rw [ satisfies_imp ]
+      rw [ satisfies_imp ]
+      intros h₁ h₂
+      rw [ satisfies_box ]
+      intros v relatie
+      cases eq
+      rw [ satisfies_box ] at h₁
+      specialize h₁ v relatie
+      rw [ satisfies_box ] at h₂
+      specialize h₂ v relatie
+      rw [ satisfies_imp ] at h₁
+      exact h₁ h₂
 
 end Formula
