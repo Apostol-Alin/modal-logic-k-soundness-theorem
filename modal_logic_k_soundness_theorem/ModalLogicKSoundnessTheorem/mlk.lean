@@ -420,7 +420,8 @@ theorem soundness_theorem : ∀ {p : Formula}, ⊢K p → ⊩ p := by
     unfold IsValid IsValidInAFrame IsValidInAState
     intros ℱ w ℳ eq
     unfold IsTautology at h
-    specialize h (satisfies ℳ (eq ▸ w)) (satisfiesIsMorphism ℳ (eq ▸ w))
+    cases eq
+    specialize h (satisfies ℳ w) (satisfiesIsMorphism ℳ w)
     assumption
   | @modusPonens φ ψ k_φ k_imp v_φ v_imp =>
     unfold IsValid IsValidInAFrame IsValidInAState
