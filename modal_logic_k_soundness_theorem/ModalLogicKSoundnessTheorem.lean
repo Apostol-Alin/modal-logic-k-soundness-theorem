@@ -1,1 +1,1 @@
-import ModalLogicKSoundnessTheorem.Basic
+import ModalLogicKSoundnessTheorem.mlk
