@@ -48,7 +48,7 @@ infixr:70 " ⇔ " => iff
 
 2. For the proof system as an inductive type, `Proof : Formula -> Prop`:
 
-```
+```lean
 inductive KProovable : Formula → Prop where
 /- All propositional tautologies are axioms of K -/
 /- Here we accest Formulas as tautologies because tautologies may contain modalities
@@ -60,13 +60,13 @@ inductive KProovable : Formula → Prop where
 | K {φ ψ : Formula} : ⊢K (□(φ ⇒ ψ) ⇒ (□φ ⇒ □ψ))
 ```
 
-Since all propositional tautologies are considered KProovable, I need a way to define that. This was done by defining a function `IsTautology` which, given a formula, says if it is tautology or not, by taking into consideration every valuation with the condition that the valuation function is a morphism (e.g. ` ∀ (φ ψ : Formula), f (φ ⇒ ψ) ↔ (f φ → f ψ)`).
+Since all propositional tautologies are considered KProovable, I need a way to define that. This was done by defining a function `IsTautology` which, given a formula, says if it is tautology or not, by taking into consideration every valuation with the condition that the valuation function is a morphism (e.g. ```lean ∀ (φ ψ : Formula), f (φ ⇒ ψ) ↔ (f φ → f ψ)```).
 
 To check if the proof system works, I tried to proove some propositions for the course material after that.
 
 3. For the notion of the validity of the formula, I had to define what a Frame is and what Model is.
 
-```
+```lean
 structure Frame where
   W : Type -- Worlds can be any type
   R : W → W → Prop -- The relation between two worlds: if R w v == true then we can say as in the course Rwv
@@ -78,7 +78,7 @@ structure Model where
 
 Then, a formula p is considered valid if it is valid in the class of all frames. That means, whichever the frame, a formula is valid in every state of that frame; then a formula is valid in a state of a frame if it is satisfiable in every model:
 
-```
+```lean
 def satisfies (ℳ : Model) (w : ℳ.ℱ.W) : Formula → Prop
   | var p   => ℳ.V p w
   | neg φ   => ¬(satisfies ℳ w φ)
@@ -97,10 +97,12 @@ def IsValid (φ : Formula) : Prop :=
 
 Then I prooved an example from the course to see how the notion of validity works:
 
-```
+```lean
 theorem example_2_19 : ⊩ (⋄(p ⋁ q) ⇒ (⋄p ⋁ ⋄q))
 ```
 
 4. The soundness theorem for modal logic K states that any formula provable in MLk is also valid.
 
-```theorem soundness_theorem : ∀ {p : Formula}, ⊢K p → ⊩ p```
+```lean
+theorem soundness_theorem : ∀ {p : Formula}, ⊢K p → ⊩ p
+```
